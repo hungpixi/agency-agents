@@ -2,7 +2,9 @@ FROM node:24-bookworm-slim
 
 ARG NINE_ROUTER_VERSION=0.4.12
 
-RUN npm install -g "9router@${NINE_ROUTER_VERSION}" \
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates python3 make g++ \
+  && npm install -g "9router@${NINE_ROUTER_VERSION}" \
   && npm cache clean --force
 
 WORKDIR /app
@@ -20,4 +22,4 @@ RUN mkdir -p /app/data \
 EXPOSE 20128
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["9router", "--host", "0.0.0.0", "--port", "20128", "--no-browser", "--skip-update", "--log"]
+CMD ["node", "/usr/local/lib/node_modules/9router/app/server.js"]

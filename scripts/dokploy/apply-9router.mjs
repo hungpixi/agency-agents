@@ -43,7 +43,7 @@ async function main() {
     domain: runtimeEnv.NINE_ROUTER_PUBLIC_URL || null,
     notes: [
       "9Router dashboard listens on port 20128.",
-      "The app builds upstream decolua/9router from apps/9router/Dockerfile.",
+      "The app installs the official npm 9router package and runs its bundled dashboard server.",
       "If no domain is configured, attach one later and set NINE_ROUTER_PUBLIC_URL.",
       "The generated INITIAL_PASSWORD is stored only in deploy/9router.env, which is gitignored.",
       "The local backup is injected through NINE_ROUTER_DB_JSON_BASE64 and restored to /app/data/db.json on first boot.",
