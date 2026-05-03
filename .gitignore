@@ -1,4 +1,6 @@
 deploy/dokploy.env
+deploy/9router.env
+9router-backup-*.json
 deploy/control-plane.env
 deploy/dokploy.operator.env
 deploy/dokploy.app.env
