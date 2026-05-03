@@ -14,6 +14,7 @@ const dockerfile = "apps/9router/Dockerfile";
 const port = 20128;
 const runtimeEnvPath = "deploy/9router.env";
 const backupPath = "9router-backup-2026-05-03T03-14-02-786Z.json";
+const skipBackup = env.NINE_ROUTER_SKIP_BACKUP === "true";
 
 async function main() {
   const runtimeEnv = ensureRuntimeEnv();
@@ -53,6 +54,13 @@ async function main() {
 
 function ensureRuntimeEnv() {
   let runtime = fs.existsSync(runtimeEnvPath) ? loadEnv(runtimeEnvPath) : {};
+  if (skipBackup) {
+    runtime = Object.fromEntries(
+      Object.entries(runtime).filter(([key]) => !key.startsWith("NINE_ROUTER_DB_JSON_")),
+    );
+    runtime.NINE_ROUTER_RESTORE_BACKUP = "false";
+    runtime.NINE_ROUTER_FORCE_RESTORE = "false";
+  }
   const defaults = {
     PORT: "20128",
     HOSTNAME: "0.0.0.0",
@@ -77,7 +85,7 @@ function ensureRuntimeEnv() {
   if (!runtime.INITIAL_PASSWORD || runtime.INITIAL_PASSWORD.includes("<")) {
     updates.INITIAL_PASSWORD = crypto.randomBytes(18).toString("base64url");
   }
-  if (fs.existsSync(backupPath)) {
+  if (!skipBackup && fs.existsSync(backupPath)) {
     const backupText = JSON.stringify(sanitizeBackup(JSON.parse(fs.readFileSync(backupPath, "utf8"))), null, 2);
     const backupSha256 = crypto.createHash("sha256").update(backupText).digest("hex");
     const backupBase64 = Buffer.from(backupText, "utf8").toString("base64");
