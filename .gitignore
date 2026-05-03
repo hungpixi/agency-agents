@@ -1,4 +1,7 @@
 deploy/dokploy.env
+deploy/control-plane.env
+deploy/dokploy.operator.env
+deploy/dokploy.app.env
 deploy/*.local.env
 deploy/dokploy/openapi-cache.json
 node_modules/
@@ -6,4 +9,5 @@ dist/
 .env
 .env.*
 !.env.example
+!*.env.example
 *.log

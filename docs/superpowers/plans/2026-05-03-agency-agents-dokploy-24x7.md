@@ -79,7 +79,7 @@ Services:
 Create these Dokploy environment variables:
 
 ```bash
-GITHUB_TOKEN=ghp_from_your_github_account
+GITHUB_TOKEN=<optional-github-token>
 AGENCY_REPO=https://github.com/msitarzewski/agency-agents.git
 AGENCY_BRANCH=main
 AGENCY_RUNTIME=openclaw
@@ -88,8 +88,8 @@ AGENCY_MAX_PARALLEL_JOBS=3
 AGENCY_MAX_TOKENS_PER_JOB=250000
 OPENCLAW_GATEWAY_PORT=18789
 OPENCLAW_GATEWAY_TOKEN=generate_a_32_byte_random_token
-OPENAI_API_KEY=sk_from_provider
-ANTHROPIC_API_KEY=sk-ant-from_provider
+OPENAI_API_KEY=<optional-openai-api-key>
+ANTHROPIC_API_KEY=<optional-anthropic-api-key>
 REDIS_URL=redis://redis:6379/0
 DATABASE_URL=postgresql://agency:agency_password@postgres:5432/agency
 CONTROL_PLANE_TOKEN=generate_a_32_byte_random_token
