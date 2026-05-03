@@ -1,31 +1,61 @@
 import http from "node:http";
-import { listAgents } from "./agents.js";
-import { createJob, getJob } from "./jobs.js";
+import { getAgent, listAgents } from "./agents.js";
+import { requireAuth } from "./auth.js";
+import { readiness, syncCatalog } from "./catalog.js";
+import { createJob, getJob, getJobResult, listJobs } from "./jobs.js";
 
 const port = Number(process.env.PORT || "3000");
 
 const server = http.createServer(async (req, res) => {
   try {
-    if (req.method === "GET" && req.url === "/healthz") {
+    const url = new URL(req.url || "/", "http://localhost");
+
+    if (req.method === "GET" && url.pathname === "/healthz") {
       return json(res, 200, { ok: true });
     }
 
-    if (req.method === "GET" && req.url === "/agents") {
+    if (req.method === "GET" && url.pathname === "/readyz") {
+      const state = await readiness();
+      return json(res, state.ok ? 200 : 503, state);
+    }
+
+    requireAuth(req);
+
+    if (req.method === "GET" && url.pathname === "/agents") {
       return json(res, 200, { agents: await listAgents() });
     }
 
-    if (req.method === "POST" && req.url === "/jobs") {
-      requireAuth(req);
+    const agentMatch = url.pathname.match(/^\/agents\/([a-z0-9-]+)$/);
+    if (req.method === "GET" && agentMatch) {
+      const agent = await getAgent(agentMatch[1]);
+      return agent ? json(res, 200, agent) : json(res, 404, { error: "not found" });
+    }
+
+    if (req.method === "POST" && url.pathname === "/jobs") {
       const body = await readJson(req);
       const job = await createJob(body);
       return json(res, 202, job);
     }
 
-    const jobMatch = req.url?.match(/^\/jobs\/([a-f0-9-]+)$/);
+    if (req.method === "GET" && url.pathname === "/jobs") {
+      return json(res, 200, { jobs: listJobs() });
+    }
+
+    const jobMatch = url.pathname.match(/^\/jobs\/([a-f0-9-]+)$/);
     if (req.method === "GET" && jobMatch) {
-      requireAuth(req);
       const job = getJob(jobMatch[1]);
       return job ? json(res, 200, job) : json(res, 404, { error: "not found" });
+    }
+
+    const resultMatch = url.pathname.match(/^\/jobs\/([a-f0-9-]+)\/result$/);
+    if (req.method === "GET" && resultMatch) {
+      const result = await getJobResult(resultMatch[1]);
+      return result ? text(res, 200, result) : json(res, 404, { error: "not found" });
+    }
+
+    if (req.method === "POST" && url.pathname === "/sync") {
+      const result = await syncCatalog();
+      return json(res, 200, result);
     }
 
     return json(res, 404, { error: "not found" });
@@ -39,20 +69,14 @@ server.listen(port, "0.0.0.0", () => {
   console.log(`agency control plane listening on ${port}`);
 });
 
-function requireAuth(req) {
-  const token = process.env.CONTROL_PLANE_TOKEN;
-  if (!token || token.includes("<")) return;
-  const auth = req.headers.authorization || "";
-  if (auth !== `Bearer ${token}`) {
-    const error = new Error("unauthorized");
-    error.statusCode = 401;
-    throw error;
-  }
-}
-
 function json(res, status, body) {
   res.writeHead(status, { "content-type": "application/json" });
   res.end(`${JSON.stringify(body)}\n`);
+}
+
+function text(res, status, body) {
+  res.writeHead(status, { "content-type": "text/markdown; charset=utf-8" });
+  res.end(body);
 }
 
 async function readJson(req) {

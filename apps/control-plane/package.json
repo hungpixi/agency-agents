@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/agents.js && node --check src/jobs.js"
+    "check": "node --check src/server.js && node --check src/agents.js && node --check src/jobs.js && node --check src/catalog.js && node --check src/auth.js"
   },
   "engines": {
     "node": ">=20"

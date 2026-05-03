@@ -2,13 +2,10 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { loadAgentPrompt } from "./agents.js";
+import { jobsDir } from "./catalog.js";
 
 const jobs = new Map();
 let runningJobs = 0;
-
-export function jobsDir() {
-  return process.env.AGENCY_JOBS_DIR || "/data/jobs";
-}
 
 export async function createJob({ agent, prompt }) {
   assertPrompt(prompt);
@@ -34,6 +31,19 @@ export async function createJob({ agent, prompt }) {
 
 export function getJob(id) {
   return jobs.get(id) || null;
+}
+
+export function listJobs() {
+  return [...jobs.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function getJobResult(id) {
+  if (!/^[a-f0-9-]+$/.test(id)) return null;
+  try {
+    return await fs.readFile(path.join(jobsDir(), id, "result.md"), "utf8");
+  } catch {
+    return null;
+  }
 }
 
 async function runJob(job, userPrompt, dir) {

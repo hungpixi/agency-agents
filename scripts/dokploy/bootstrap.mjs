@@ -156,7 +156,7 @@ async function ensureApplication(client, environmentId, name) {
 async function ensureRedis(client, environmentId, env) {
   const project = findProject((await getContext(client)).projects);
   const environment = ensureEnvironment(project);
-  const existing = environment.redis?.find((item) => item.name === "agency-redis");
+  const existing = environment.redis?.find((item) => item.name === "agency-redis") || environment.redis?.[0];
   if (existing) return existing;
   return client.post("/api/redis.create", {
     name: "agency-redis",
@@ -168,7 +168,7 @@ async function ensureRedis(client, environmentId, env) {
 async function ensurePostgres(client, environmentId, env) {
   const project = findProject((await getContext(client)).projects);
   const environment = ensureEnvironment(project);
-  const existing = environment.postgres?.find((item) => item.name === "agency-postgres");
+  const existing = environment.postgres?.find((item) => item.name === "agency-postgres") || environment.postgres?.[0];
   if (existing) return existing;
   return client.post("/api/postgres.create", {
     name: "agency-postgres",
@@ -181,13 +181,14 @@ async function ensurePostgres(client, environmentId, env) {
 
 async function configureApplication(client, applicationId, service, env) {
   const { owner, repository } = parseRepository(env.AGENCY_DEPLOY_REPOSITORY || "hungpixi/agency-agents");
+  const githubId = await getGithubProviderId(client);
   await client.post("/api/application.saveGithubProvider", {
     applicationId,
     owner,
     repository,
     branch: env.AGENCY_DEPLOY_BRANCH || "main",
     buildPath: "/",
-    githubId: "",
+    githubId,
   });
   await client.post("/api/application.saveBuildType", {
     applicationId,
@@ -205,6 +206,15 @@ async function configureApplication(client, applicationId, service, env) {
     buildSecrets: "",
     createEnvFile: false,
   });
+}
+
+async function getGithubProviderId(client) {
+  const providers = await client.get("/api/gitProvider.getAll");
+  const provider = providers.find((item) => item.providerType === "github" || item.github);
+  if (!provider) {
+    throw new Error("No GitHub provider is configured in Dokploy.");
+  }
+  return provider.gitProviderId;
 }
 
 async function ensureMount(client, serviceId, mount) {

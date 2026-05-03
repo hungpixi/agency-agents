@@ -1,10 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-
-const DEFAULT_CATALOG_DIR = "/data/agency/current/integrations/openclaw";
+import { openclawCatalogDir } from "./catalog.js";
 
 export function catalogDir() {
-  return process.env.AGENCY_CATALOG_OPENCLAW_DIR || DEFAULT_CATALOG_DIR;
+  return openclawCatalogDir();
 }
 
 export async function listAgents() {
@@ -44,6 +43,16 @@ export async function loadAgentPrompt(agentId) {
     throw new Error(`Agent not found: ${agentId}`);
   }
   return [identity, soul, instructions].filter(Boolean).join("\n\n");
+}
+
+export async function getAgent(agentId) {
+  const agents = await listAgents();
+  const agent = agents.find((item) => item.id === agentId);
+  if (!agent) return null;
+  return {
+    ...agent,
+    prompt: await loadAgentPrompt(agentId),
+  };
 }
 
 async function readOptional(file) {
