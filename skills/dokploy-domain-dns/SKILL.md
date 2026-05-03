@@ -11,11 +11,13 @@ Use this skill when a user needs to connect a domain or subdomain to a Dokploy a
 
 1. Choose a subdomain, usually not the apex domain.
 2. Resolve the Dokploy host IP.
-3. Tell the user exactly which DNS record to create.
-4. Verify public DNS propagation.
-5. Attach the domain to the Dokploy app.
-6. Redeploy or refresh the app if needed.
-7. Verify HTTPS health endpoint.
+3. Check authoritative nameservers at the TLD first.
+4. If the domain is still delegated to a slow host DNS provider such as Vinahost, recommend switching nameservers to Cloudflare.
+5. In Cloudflare, create DNS-only A records for each Dokploy app subdomain.
+6. Verify public DNS propagation.
+7. Attach the domain to the Dokploy app.
+8. Redeploy or refresh the app if needed.
+9. Verify HTTPS health endpoint.
 
 ## Recommended Record
 
@@ -41,6 +43,26 @@ If the DNS manager requires FQDN:
 agency.example.com.
 ```
 
+## Cloudflare Fast Path
+
+Prefer Cloudflare DNS when the current DNS provider is slow to publish records.
+
+1. Add the domain to Cloudflare.
+2. Copy the two Cloudflare nameservers.
+3. At the registrar/domain manager, replace the old nameservers with the Cloudflare nameservers.
+4. Verify the `.com` TLD now delegates to Cloudflare before relying on Cloudflare records.
+5. Add A records in Cloudflare:
+
+```text
+Type: A
+Name: <subdomain>
+Value: <Dokploy server IPv4>
+Proxy status: DNS only
+TTL: Auto
+```
+
+Keep Dokploy-hosted app records as **DNS only** at first. This lets Dokploy/Traefik issue Let's Encrypt certificates directly and avoids Cloudflare proxy masking origin HTTPS issues. Turn the orange cloud on later only after the app is healthy over HTTPS.
+
 ## Commands
 
 Resolve Dokploy host:
@@ -53,6 +75,19 @@ Resolve target domain:
 
 ```powershell
 rtk proxy node -e "const dns=require('dns').promises; Promise.all([dns.lookup('<subdomain>'), dns.resolve4('<subdomain>')]).then(([lookup,a])=>console.log(JSON.stringify({lookup,a},null,2))).catch(e=>console.error(e.code||e.message))"
+```
+
+Check authoritative `.com` delegation:
+
+```powershell
+rtk proxy nslookup -type=ns <domain> a.gtld-servers.net
+```
+
+Cloudflare success looks like:
+
+```text
+<domain> nameserver = <name>.ns.cloudflare.com
+<domain> nameserver = <name>.ns.cloudflare.com
 ```
 
 Verify HTTPS:
@@ -75,6 +110,8 @@ then public DNS cannot see the record yet. Causes:
 - record created in the wrong DNS provider
 - domain nameservers do not point to the DNS manager being edited
 - typo in subdomain
+
+If 1.1.1.1 sees Cloudflare nameservers but local Node DNS still sees the old provider, treat local DNS as cached. Continue using 1.1.1.1 or TLD checks as source of truth.
 
 If DNS resolves but HTTPS fails:
 

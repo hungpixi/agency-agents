@@ -22,4 +22,4 @@ RUN mkdir -p /app/data \
 EXPOSE 20128
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["9router", "--host", "0.0.0.0", "--port", "20128", "--no-browser", "--skip-update", "--log"]
+CMD ["node", "/usr/local/lib/node_modules/9router/app/server.js"]
