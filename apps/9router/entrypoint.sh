@@ -14,5 +14,4 @@ if [ "${NINE_ROUTER_RESTORE_BACKUP:-true}" = "true" ] && [ -n "${NINE_ROUTER_DB_
   fi
 fi
 
-chown -R bun:bun "$DATA_DIR" 2>/dev/null || true
-exec su-exec bun "$@"
+exec "$@"
