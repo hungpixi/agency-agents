@@ -158,7 +158,9 @@ async function ensureMounts(applicationId) {
   try {
     await post("/api/mounts.create", {
       serviceId: applicationId,
+      serviceType: "application",
       type: "volume",
+      volumeName: "agency-9router-data",
       mountPath: "/app/data",
     });
   } catch (error) {

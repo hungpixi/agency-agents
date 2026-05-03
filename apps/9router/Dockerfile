@@ -4,6 +4,8 @@ ARG NINE_ROUTER_REPO=https://github.com/decolua/9router.git
 ARG NINE_ROUTER_BRANCH=master
 
 FROM ${BUN_IMAGE} AS source
+ARG NINE_ROUTER_REPO
+ARG NINE_ROUTER_BRANCH
 WORKDIR /src
 RUN apk --no-cache add git
 RUN git clone --depth 1 --branch "${NINE_ROUTER_BRANCH}" "${NINE_ROUTER_REPO}" .
