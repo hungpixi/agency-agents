@@ -185,6 +185,9 @@ async function maybeConfigureDomain(applicationId, runtimeEnv) {
   if (!publicUrl || publicUrl.includes("<")) return;
   const host = publicUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   if (!host) return;
+  const existingApp = await get(`/api/application.one?applicationId=${encodeURIComponent(applicationId)}`);
+  const existingDomain = existingApp.domains?.find((domain) => domain.host === host && domain.port === port);
+  if (existingDomain) return;
   try {
     await post("/api/domain.create", {
       applicationId,
