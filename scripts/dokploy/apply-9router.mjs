@@ -78,11 +78,12 @@ function ensureRuntimeEnv() {
     updates.INITIAL_PASSWORD = crypto.randomBytes(18).toString("base64url");
   }
   if (fs.existsSync(backupPath)) {
-    const backupText = fs.readFileSync(backupPath, "utf8");
-    JSON.parse(backupText);
+    const backupText = JSON.stringify(sanitizeBackup(JSON.parse(fs.readFileSync(backupPath, "utf8"))), null, 2);
+    const backupSha256 = crypto.createHash("sha256").update(backupText).digest("hex");
     const backupBase64 = Buffer.from(backupText, "utf8").toString("base64");
     if (runtime.NINE_ROUTER_DB_JSON_BASE64 !== backupBase64) {
       updates.NINE_ROUTER_DB_JSON_BASE64 = backupBase64;
+      updates.NINE_ROUTER_DB_JSON_SHA256 = backupSha256;
       if (!runtime.NINE_ROUTER_RESTORE_BACKUP) updates.NINE_ROUTER_RESTORE_BACKUP = "true";
       if (!runtime.NINE_ROUTER_FORCE_RESTORE) updates.NINE_ROUTER_FORCE_RESTORE = "false";
     }
@@ -209,6 +210,7 @@ function serializeRuntimeEnv(runtimeEnv) {
     "AUTH_COOKIE_SECURE",
     "REQUIRE_API_KEY",
     "NINE_ROUTER_DB_JSON_BASE64",
+    "NINE_ROUTER_DB_JSON_SHA256",
     "NINE_ROUTER_RESTORE_BACKUP",
     "NINE_ROUTER_FORCE_RESTORE",
   ];
@@ -216,6 +218,20 @@ function serializeRuntimeEnv(runtimeEnv) {
     .filter((key) => runtimeEnv[key] !== undefined && runtimeEnv[key] !== "" && !String(runtimeEnv[key]).includes("<"))
     .map((key) => `${key}=${runtimeEnv[key]}`)
     .join("\n");
+}
+
+function sanitizeBackup(backup) {
+  const sanitized = structuredClone(backup);
+  sanitized.settings = {
+    ...(sanitized.settings || {}),
+    cloudEnabled: false,
+    tunnelEnabled: false,
+    tailscaleEnabled: false,
+    outboundProxyEnabled: false,
+    mitmEnabled: false,
+    mitmCertInstalled: false,
+  };
+  return sanitized;
 }
 
 async function get(path) {
